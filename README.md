@@ -1,6 +1,8 @@
 # Universal CV Anomaly Detection Paper Reviewer
 
-[![Status](https://img.shields.io/badge/Status-Universal_Standard_Skill-blue.svg)](https://github.com/your-username/CV-Anomaly-Detection-Reviewer)
+[中文版 (Chinese Version)](README_zh.md)
+
+[![Status](https://img.shields.io/badge/Status-Universal_Standard_Skill-blue.svg)](https://github.com/aurora0543/CV-Anomaly-Detection-Reviewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://www.python.org/)
 
@@ -74,8 +76,25 @@ If using Codex or Claude, follow the protocol in `INTERFACE.md`. Your agent shou
 1. Parse the paper based on `references/template.md`.
 2. Run the headless backend command:
    ```bash
-   ./.venv/bin/python scripts/update_excel.py CV_Anomaly_Detection_Master_List.xlsx '<JSON_DATA>'
+   ./.venv/bin/python scripts/update_excel.py "$(pwd)/CV_Anomaly_Detection_Master_List.xlsx" '<JSON_DATA>'
    ```
+
+---
+
+## ⚠️ Known Issues & Strategy
+
+### PDF Reading Tool Selection Issue
+**Problem**: In multi-agent environments, host models have vastly different native PDF reading capabilities. Blindly attempting to use built-in tools for unsupported PDF formats leads to **Context Poisoning**, resulting in 400 errors that break subsequent turns.
+
+**Current Strategy (Capability-Based Routing)**:
+This skill implements a "pre-execution capability check" to branch logic before any read attempt:
+1. **Model Detection**: Host model IDs are matched against a **Multimodal Support Allowlist** (e.g., `claude-*`, `gpt-4*`, `gemini-*`, `o1-*`).
+2. **Dynamic Routing**:
+   - **Allowlisted Models**: Call native Agent read tools. Silently fall back to local extraction if unexpected terminal errors occur.
+   - **Unsupported/Unknown Models (e.g., `ark-*`, custom proxy IDs)**: Bypass API attempts entirely and use local system tools (e.g., `pdftotext`, `pypdf`, or OCR scripts) to extract text.
+3. **Benefit**: This prevents invalid content types from entering the context, ensuring robust performance even with models behind proxies or those without native document support.
+
+> *We are constantly looking for more elegant ways to perform dynamic tool discovery. If you have suggestions for better implementation, feel free to open an Issue or PR.*
 
 ---
 
